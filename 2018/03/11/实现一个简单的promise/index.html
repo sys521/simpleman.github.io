@@ -79,16 +79,17 @@
 
 
 
-<meta name="description" content="web javascript html css node.js">
-<meta property="og:type" content="website">
-<meta property="og:title" content="风情的博客">
-<meta property="og:url" content="http://yoursite.com/index.html">
+<meta name="description" content="前言使用promise以后，极大了方便我们写异步函数，再也不想回到 “原始时代”的刀耕火种了，promise方便是方便，但是具体是怎么实现的呢，本篇文章就来实现一个最简版的promise。 本篇文章实现的promise并不是按照规范来写的，功能也不会那么强大，适合写promise的新手来读，如果只是好奇promise大概是怎么工作的可以简单的看一下，如果高手进阶，请直接关闭。 一、promise的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实现一个简单的promise">
+<meta property="og:url" content="http://yoursite.com/2018/03/11/实现一个简单的promise/index.html">
 <meta property="og:site_name" content="风情的博客">
-<meta property="og:description" content="web javascript html css node.js">
+<meta property="og:description" content="前言使用promise以后，极大了方便我们写异步函数，再也不想回到 “原始时代”的刀耕火种了，promise方便是方便，但是具体是怎么实现的呢，本篇文章就来实现一个最简版的promise。 本篇文章实现的promise并不是按照规范来写的，功能也不会那么强大，适合写promise的新手来读，如果只是好奇promise大概是怎么工作的可以简单的看一下，如果高手进阶，请直接关闭。 一、promise的">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-11T15:08:21.593Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="风情的博客">
-<meta name="twitter:description" content="web javascript html css node.js">
+<meta name="twitter:title" content="实现一个简单的promise">
+<meta name="twitter:description" content="前言使用promise以后，极大了方便我们写异步函数，再也不想回到 “原始时代”的刀耕火种了，promise方便是方便，但是具体是怎么实现的呢，本篇文章就来实现一个最简版的promise。 本篇文章实现的promise并不是按照规范来写的，功能也不会那么强大，适合写promise的新手来读，如果只是好奇promise大概是怎么工作的可以简单的看一下，如果高手进阶，请直接关闭。 一、promise的">
 
 
 
@@ -118,13 +119,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/"/>
+  <link rel="canonical" href="http://yoursite.com/2018/03/11/实现一个简单的promise/"/>
 
 
 
 
 
-  <title>风情的博客</title>
+  <title>实现一个简单的promise | 风情的博客</title>
   
 
 
@@ -143,8 +144,7 @@
     
   
 
-  <div class="container sidebar-position-right 
-  page-home">
+  <div class="container sidebar-position-right page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -227,9 +227,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -259,9 +259,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/03/11/实现一个简单的promise/" itemprop="url">实现一个简单的promise</a></h1>
+          <h1 class="post-title" itemprop="name headline">实现一个简单的promise</h1>
         
 
         <div class="post-meta">
@@ -344,9 +342,7 @@
       
 
       
-        
-          
-            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>使用promise以后，极大了方便我们写异步函数，再也不想回到 “原始时代”的刀耕火种了，promise方便是方便，但是具体是怎么实现的呢，本篇文章就来实现一个最简版的promise。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>使用promise以后，极大了方便我们写异步函数，再也不想回到 “原始时代”的刀耕火种了，promise方便是方便，但是具体是怎么实现的呢，本篇文章就来实现一个最简版的promise。</p>
 <p>本篇文章实现的promise并不是按照规范来写的，功能也不会那么强大，适合写promise的新手来读，如果只是好奇promise大概是怎么工作的可以简单的看一下，如果高手进阶，请直接关闭。</p>
 <h2 id="一、promise的简单用法。"><a href="#一、promise的简单用法。" class="headerlink" title="一、promise的简单用法。"></a>一、promise的简单用法。</h2><p>在实现之前，我们先来写一个promise的简单用法。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">var p = new Promise()</span><br><span class="line"></span><br><span class="line">let fn1 = function () &#123;</span><br><span class="line">  setTimeout(() =&gt; &#123;</span><br><span class="line">    console.log(&apos;fn1&apos;)</span><br><span class="line">    p.resolve()</span><br><span class="line">  &#125;,1000)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">let fn2 = function () &#123;</span><br><span class="line">  setTimeout(() =&gt; &#123;</span><br><span class="line">    console.log(&apos;fn2&apos;)</span><br><span class="line">    p.resolve()</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line">let fn3 = function () &#123;</span><br><span class="line">  setTimeout(() =&gt; &#123;</span><br><span class="line">    console.log(&apos;fn3&apos;)</span><br><span class="line">    p.resolve()</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line">fn1().then(fn1).then(fn2,fn3)</span><br></pre></td></tr></table></figure>
@@ -389,8 +385,6 @@
 <p>想要了解更详细的promise 可以参考 promise|A+ 的规范，然后满足起功能就可以写一个了。</p>
 <p>这有有一个美团实现的promise </p>
 <h2 id="美团"><a href="#美团" class="headerlink" title="美团"></a><a href="https://tech.meituan.com/promise-insight.html" target="_blank" rel="noopener">美团</a></h2>
-          
-        
       
     </div>
     
@@ -407,199 +401,28 @@
       
 
       
-
-      
-
       
       
-        <div class="post-eof"></div>
+
       
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/04/javascript中的this/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="风情">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="风情的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/03/04/javascript中的this/" itemprop="url">javascript中的this</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-04T16:29:44+08:00">
-                2018-03-04
-              </time>
+              <a href="/2018/03/04/javascript中的this/" rel="next" title="javascript中的this">
+                <i class="fa fa-chevron-left"></i> javascript中的this
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/js/" itemprop="url" rel="index">
-                    <span itemprop="name">js</span>
-                  </a>
-                </span>
-
-                
-                
-                  ， 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/js/js基础/" itemprop="url" rel="index">
-                    <span itemprop="name">js基础</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-            <h2 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h2><p> 这是笔者在日常学习中，对javascript中的this常见的几种场景，做了一个简单的总结。</p>
-<p> this 不能在函数创建的时候就确定。只能在函数被调用的时候被确定，并且，this指向的就是函数的执行上下文或者说函数的调用者。</p>
-<h2 id="this-的常见的使用情景。"><a href="#this-的常见的使用情景。" class="headerlink" title="this 的常见的使用情景。"></a>this 的常见的使用情景。</h2><h3 id="1-普通函数中的this"><a href="#1-普通函数中的this" class="headerlink" title="1. 普通函数中的this"></a>1. 普通函数中的this</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">let name = &apos;xxx&apos;</span><br><span class="line">function name () &#123;</span><br><span class="line">  console.log(this.name)</span><br><span class="line">&#125;</span><br><span class="line">name () // &apos;xxx&apos;</span><br></pre></td></tr></table></figure>
-<p>上面的代码是在普通函数中的使用，但是实际上， name 这个函数的执行上下文是window || global</p>
-<p>name  === window.name || global.name</p>
-<p>此时函数name的执行的上下文可以理解为window, 或者 global.</p>
-<p>所以 this指向的是全局对象。</p>
-<h3 id="2-作为对象的方法。"><a href="#2-作为对象的方法。" class="headerlink" title="2. 作为对象的方法。"></a>2. 作为对象的方法。</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">  name: &apos;xiaoming&apos;</span><br><span class="line">  getName () &#123;</span><br><span class="line">    console.log(this.name)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">obj.getName() // &apos;xiaoming&apos;</span><br><span class="line">var getName = obj.getName</span><br><span class="line">getName() // &apos;undefined&apos;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><p>obj.getName()</p>
-<p>这个结果是因为，调用getName 这个函数的调用者是 obj. 所以函数内部的this指向的是obj.</p>
-</li>
-<li><p>var getName = obj.getName</p>
-<p>此时，getName 是一个全局声明的一个变量，这个变量是一个函数，所以，函数的调用者是window || global.</p>
-</li>
-</ul>
-<h3 id="3-构造函数中的this"><a href="#3-构造函数中的this" class="headerlink" title="3. 构造函数中的this."></a>3. 构造函数中的this.</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">function Student(name) &#123;</span><br><span class="line">  this.name = name</span><br><span class="line">&#125;</span><br><span class="line">Student.prototype.getName = function () &#123;</span><br><span class="line">  console.log(this.name)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">var xiaoming = new Student(&apos;xiaoming&apos;)</span><br><span class="line">xiaoming.getName() // &apos;xiaoming&apos;</span><br><span class="line">var xiaomingName = xiaoming.getName</span><br><span class="line">xiaomingName() // &apos;undefined&apos;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><p>xiaoming.getName()<br>函数的调用者仍然是xiaoming , 所以函数内部的this 指向的是 xiaoming.</p>
-</li>
-<li><p>xiaomingName()<br>函数的调用者变成全局对象, 所以函数内部的this指向的 window || global</p>
-</li>
-</ul>
-<h3 id="4-call-apply-bind"><a href="#4-call-apply-bind" class="headerlink" title="4. call, apply, bind"></a>4. call, apply, bind</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">  name: &apos;xx&apos;</span><br><span class="line">  getName() &#123;</span><br><span class="line">    console.log(this.name)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">let obj2 = &#123;</span><br><span class="line">  name: &apos;hh&apos;</span><br><span class="line">&#125;</span><br><span class="line">obj.getName.call(obj2) // &apos;hh&apos;</span><br></pre></td></tr></table></figure>
-<p>call, apply, bind 这三个方法都改变了函数的执行上下文。 把函数的上下文变成了obj2.</p>
-<h3 id="5-箭头函数"><a href="#5-箭头函数" class="headerlink" title="5. 箭头函数"></a>5. 箭头函数</h3><p>箭头函数不创建新的上下文,没有自己的this. 箭头函数内部的this.就是封闭的上下文中的this。 </p>
-<ul>
-<li>箭头函数作为对象的方法。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">  name: &apos;xx&apos;,</span><br><span class="line">  getName: () =&gt; &#123;</span><br><span class="line">    console.log(this)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">obj.getName() // &#123;&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<p>首先上述的写法语法上是没有问题的，但是箭头函数是不会自己绑定this的。所以，这个时候this是空对象。</p>
-<h4 id="结论1-箭头函数不应该直接作为函数的方法。"><a href="#结论1-箭头函数不应该直接作为函数的方法。" class="headerlink" title="结论1:箭头函数不应该直接作为函数的方法。"></a>结论1:箭头函数不应该直接作为函数的方法。</h4><ul>
-<li>箭头函数在普通函数内部。</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">  name: &apos;xx&apos;,</span><br><span class="line">  getName () &#123;</span><br><span class="line">    let f = () =&gt; console.log(this.name)</span><br><span class="line">    f()</span><br><span class="line">    let obj2 = &#123;</span><br><span class="line">      name: &apos;hh&apos;</span><br><span class="line">    &#125;</span><br><span class="line">    let g = (v) =&gt; console.log(this.name + v)</span><br><span class="line">    g.call(obj2,1)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">obj.getName() // &apos;xx&apos;,&apos;xx1&apos;</span><br></pre></td></tr></table></figure>
-<h4 id="结论2：bind-call-apply不能影响箭头函数中的this-但可以传递参数"><a href="#结论2：bind-call-apply不能影响箭头函数中的this-但可以传递参数" class="headerlink" title="结论2：bind,call,apply不能影响箭头函数中的this,但可以传递参数."></a>结论2：bind,call,apply不能影响箭头函数中的this,但可以传递参数.</h4>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -609,10 +432,11 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -620,6 +444,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -640,8 +468,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -701,6 +538,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一、promise的简单用法。"><span class="nav-number">2.</span> <span class="nav-text">一、promise的简单用法。</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、动手实现一个promise。"><span class="nav-number">3.</span> <span class="nav-text">二、动手实现一个promise。</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#美团"><span class="nav-number">4.</span> <span class="nav-text">美团</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -834,6 +687,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
