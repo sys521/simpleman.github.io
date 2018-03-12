@@ -242,6 +242,230 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/12/vue-koa2-mysql-构建一个简单的博客/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="风情">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="风情的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/12/vue-koa2-mysql-构建一个简单的博客/" itemprop="url">vue + koa2 + mysql 构建一个简单的博客</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-12T20:29:39+08:00">
+                2018-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/" itemprop="url" rel="index">
+                    <span itemprop="name">js</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/简单的项目/" itemprop="url" rel="index">
+                    <span itemprop="name">简单的项目</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>用javascript写前端已经有一段时间了，本身对后端工作又充满好奇，所以就想在业余时间写一个简单的博客系统，虽然博客系统都可能被写烂了，但是身为初学者，如果只是为了学习，其实写什么项目倒是无所谓的，重要的是有想法就赶紧实施。<br>后端采用的 koa2 , 前端用还算熟悉的vue.js 数据库用的是 mysql.</p>
+<h2 id="开发环境搭建"><a href="#开发环境搭建" class="headerlink" title="开发环境搭建"></a>开发环境搭建</h2><p>各种cli工具其实都已经有现成的，本着学着写node.js的目的，而不是适配webpack，配置各种库，就没有使用webpack。自己来配置开发环境了。</p>
+<h3 id="koa2搭建后端环境。"><a href="#koa2搭建后端环境。" class="headerlink" title="koa2搭建后端环境。"></a>koa2搭建后端环境。</h3><ul>
+<li><p>koa-generator 构建。</p>
+<p>使用这个构建工具，直接就帮你构建好了一个后端环境，我们不需要再关注，选择什么样的中间件了，我们应该把注意力放在怎么样实现项目上。</p>
+</li>
+<li><p>相关依赖。</p>
+<ol>
+<li>session 相关。<br>因为，我们有注册登录功能，又不想那么麻烦，每次都要登录，所以加入了 session.</li>
+</ol>
+<p>用到了koa-session-minimal, 同时将 session 存储在 mysql中，使用到了koa-session-mysql 这个库，</p>
+<p>当然你也考虑其他的储存方式。</p>
+<ol>
+<li>数据库相关。</li>
+</ol>
+<p>由于我们使用的是mysql 。所以需要一个连接mysql 的中间件，这里用了mysql2.</p>
+<ol>
+<li>orm</li>
+</ol>
+<p>说真的，这里使用orm并不是真的为了安全性。是真的不想在js 中使用 原生的 sql 语句。 </p>
+<p>这里使用的是 sequlize。</p>
+<ol>
+<li>multipart/form-data 格式。</li>
+</ol>
+<p>由于脚手架中的解析body的中间件，不解析 multipart/form-data 的文件，所以，当我们上传图片时候就比较难受了，这里用到了 koa-multer 这个中间件。</p>
+</li>
+</ul>
+<h3 id="前端开发环境构建。"><a href="#前端开发环境构建。" class="headerlink" title="前端开发环境构建。"></a>前端开发环境构建。</h3><ul>
+<li>vue-cli构建。</li>
+</ul>
+<p>直接用vue-cli提供的脚手架搭建即可，但是需要配置一下 开发环境中的代理，</p>
+<p><a href="https://imgchr.com/i/9fU8hV" target="_blank" rel="noopener"><img src="https://s1.ax1x.com/2018/03/12/9fU8hV.md.png" alt="9fU8hV.md.png"></a></p>
+<p>为了以后操作的简便，我们可以配置 config.js 在开发环境中写 </p>
+<p><a href="https://imgchr.com/i/9fa0Kg" target="_blank" rel="noopener"><img src="https://s1.ax1x.com/2018/03/12/9fa0Kg.md.png" alt="9fa0Kg.md.png"></a></p>
+<p>在生产环境中，配置<br><img src="https://s1.ax1x.com/2018/03/12/9fd1zT.png" alt="9fd1zT.png"></p>
+<p>然后 main.js 设置<br><img src="https://s1.ax1x.com/2018/03/12/9fdceH.png" alt="9fdceH.png"></p>
+<p>这样，我们以后就可以只写接口名字了。省得麻烦。</p>
+<ul>
+<li><p>相关依赖。。</p>
+<ol>
+<li><p>界面用了element-ui。 </p>
+</li>
+<li><p>markdown语法解析器用的是 一个基于vue的插件， mavon-markdown</p>
+</li>
+</ol>
+</li>
+</ul>
+<p>各种库和插件的用法，英文文档，中文文档都挺全面的，就不再赘述了。</p>
+<h3 id="开始前"><a href="#开始前" class="headerlink" title="开始前"></a>开始前</h3><p>开始前，我们应该稍微整理下思路。</p>
+<p>首先，我们应当考虑的是我们这个应用要满足哪些功能。。<br>由于功能不必太复杂，所以，构建初期，我们考虑到 要有的功能， 大致我们先准备完成这么多。于是，我们开始根据这个建表。</p>
+<hr>
+<p>   用户注册，登录，发表文章，添加关注，为文章点赞。</p>
+<hr>
+<p>根据这些功能，我们大致可以建立如下的表，</p>
+<p>user表，artical表，concern表。 love表。</p>
+<p>最后完成数据库完成，由于我们的考虑文章中的图片直接也用os储存起来，我们还可以建立一个articalImgs表用来放图片的路径。</p>
+<p>考虑好这些表结构，我们就可以开始构建模型了。</p>
+<h3 id="正式开始。"><a href="#正式开始。" class="headerlink" title="正式开始。"></a>正式开始。</h3><p>其实这个项目不怎么难，但是由于没有太接触过后端，没有真真正正的理解到，数据库的模型是多么的重要， 也完全没有</p>
+<p>规划好接口到底怎么设计，导致写的时候觉得很烦躁，完全都有想重来的冲动。。</p>
+<p>所以，以后再写项目的时候，一定要注意事先 设计好 数据库，设计好api。免得以后写代码的时候想重来。</p>
+<p>除了这些。业务逻辑如果想实现起来其实很简单，无非就是写写正常的业务逻辑，就算sequlize不熟悉，我们也可以去查<br>文档。</p>
+<p><strong> 但是想要优化，或者用看起来代码做的事情优雅，代码倒是其次，关键是得提前设计好 </strong></p>
+<h3 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h3><p>最后，本来感觉这个博客系统工作量不是太大，但是，实际写起来感觉也花费了不少时间。。<br>但是写完之后，感觉收获最大的是。</p>
+<ul>
+<li><p>写代码前，要有一定的时间来构思来细化思路，而不是有个大概，就开始先写。至少应该把想到的细节都先梳理一遍。</p>
+</li>
+<li><p>koa这个框架真心小巧好用，async/await 写起来很优雅。</p>
+</li>
+</ul>
+<p>github: </p>
+<p><a href="https://github.com/sys521/blog-client" target="_blank" rel="noopener">https://github.com/sys521/blog-client</a></p>
+<p><a href="https://github.com/sys521/blog-sever" target="_blank" rel="noopener">https://github.com/sys521/blog-sever</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/11/实现一个简单的promise/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -656,7 +880,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -667,7 +891,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -678,7 +902,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
