@@ -242,6 +242,183 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/12/js的microtast-和-macrotask/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="风情">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="风情的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/04/12/js的microtast-和-macrotask/" itemprop="url">js的microtast 和 macrotask</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-12T21:16:49+08:00">
+                2018-04-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/" itemprop="url" rel="index">
+                    <span itemprop="name">js</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/js基础/" itemprop="url" rel="index">
+                    <span itemprop="name">js基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="先看一道面试题"><a href="#先看一道面试题" class="headerlink" title="先看一道面试题"></a>先看一道面试题</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">setTimeout(() =&gt; &#123;</span><br><span class="line">  console.log(1)</span><br><span class="line">&#125;,0)</span><br><span class="line">console.log(2)</span><br><span class="line"></span><br><span class="line">async function fn1 () &#123;</span><br><span class="line">  console.log(3)</span><br><span class="line">  await fn2()</span><br><span class="line">  console.log(4)</span><br><span class="line">&#125;</span><br><span class="line">fn1()</span><br><span class="line">console.log(5)</span><br><span class="line">function fn2 () &#123;</span><br><span class="line">  return new Promise((resolve, reject) =&gt; &#123;</span><br><span class="line">    console.log(6)</span><br><span class="line">    setTimeout(() =&gt; &#123;</span><br><span class="line">      console.log(7)</span><br><span class="line">      resolve()</span><br><span class="line">      console.log(8)</span><br><span class="line">    &#125;,0)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>正确答案是</p>
+<p>2 3 6 5 1 7 8 4</p>
+<p>不知道你写对了没有。有promise, async/await , setTimeout,看上去似乎答案不容易确定。但是如果你知道浏览器的eventloop那么相信你就能很快的写出来正确答案了。</p>
+<h2 id="浏览器的eventloop"><a href="#浏览器的eventloop" class="headerlink" title="浏览器的eventloop"></a>浏览器的eventloop</h2><p>浏览器的eventloop至少包含两种 macrotask 和 microtask</p>
+<p>Macrotasks包含生成dom对象、解析HTML、执行主线程js代码、更改当前URL还有其他的一些事件如页面加载、输入、网络事件和定时器事件。从浏览器的角度来看，macrotask代表一些离散的独立的工作。当执行完一个task后，浏览器可以继续其他的工作如页面重渲染和垃圾回收。</p>
+<p>Microtasks则是完成一些更新应用程序状态的较小任务，如处理promise的回调和DOM的修改，这些任务在浏览器重渲染前执行。Microtask应该以异步的方式尽快执行，其开销比执行一个新的macrotask要小。Microtasks使得我们可以在UI重渲染之前执行某些任务，从而避免了不必要的UI渲染，这些渲染可能导致显示的应用程序状态不一致。</p>
+<p><a href="https://imgchr.com/i/CE0AsS" target="_blank" rel="noopener"><img src="https://s1.ax1x.com/2018/04/12/CE0AsS.png" alt="CE0AsS.png"></a></p>
+<p>由上图可知</p>
+<ul>
+<li><p>macrotask一次只执行一个，而microtask是全部执行完成才开始下一轮。</p>
+</li>
+<li><p>同一时间只能执行一个任务</p>
+</li>
+<li><p>任务直到执行完成，不能被其他任务抢断。</p>
+</li>
+</ul>
+<p>当然每一个mircotask 和 macrotask并不一定只有一个队列，也会根据事件的重要程度划分到不同的marcotask和mircotask中，总是优先执行重要的事件。</p>
+<h2 id="常见事件的macrotask-和-mircotask区分。"><a href="#常见事件的macrotask-和-mircotask区分。" class="headerlink" title="常见事件的macrotask 和 mircotask区分。"></a>常见事件的macrotask 和 mircotask区分。</h2><p>macrotasks: setTimeout ，setInterval， setImmediate，requestAnimationFrame,I/O ，UI渲染<br>microtasks: Promise, process.nextTick， Object.observe， MutationObserver</p>
+<h2 id="由此，我们可以来回答我们的面试题了。"><a href="#由此，我们可以来回答我们的面试题了。" class="headerlink" title="由此，我们可以来回答我们的面试题了。"></a>由此，我们可以来回答我们的面试题了。</h2><p>我们都知道，js是单线程的，浏览器执行js的时候是一个macrotask。 遇到setTimeout会将其放入下一个macrotask。<br>遇到promise我们会将其放入一个microtask。promise。当我们的js全部执行完成以后，我们再去执行microtask,即执行microtask。然后再执行macrotask里面的setTimeout</p>
+<p>所以，我们的面试题也就不能得出答案了。。</p>
+<h2 id="与性能优化相关。"><a href="#与性能优化相关。" class="headerlink" title="与性能优化相关。"></a>与性能优化相关。</h2><p>浏览器通常每秒尝试渲染页面60次，以达到每秒60帧（60 fps），这个帧速率通常被认为是平滑运动的理想选择。这意味着浏览器尝试每16ms渲染一帧。</p>
+<p>如果我们的mircotask所有相关的任务大大超过16ms这个时候，浏览器就不能按照正常目标的帧率来渲染ui。用户就能感觉到卡顿。</p>
+<p>另外要注意 requestAnimationFrame(code)，一般用于动画，与 setTimeout 方法类似，区别是 setTimeout 是用户指定的，而 requestAnimationFrame 是浏览器刷新频率决定的，一般遵循 W3C 标准，它在浏览器每次刷新页面之前执行。<br>但有兼容性问题。</p>
+<h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h2><p>写这篇文章主要是为了下一篇文章，vue异步渲染要用到。属于前置知识。 vue的源码中，用了promise, MumationObserve, setTimeout 根据支持情况，做异步更新。 promise和MumationObserve先于 setTimeout就是因为，mircotask 总是先于ui渲染执行。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/21/基于vue-js浅析MVVM原理，附代码实现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1154,7 +1331,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1176,7 +1353,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
