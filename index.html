@@ -261,7 +261,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/04/12/js的microtast-和-macrotask/" itemprop="url">js的microtast 和 macrotask</a></h1>
+                <a class="post-title-link" href="/2018/04/12/js的microtast-和-macrotask/" itemprop="url">js的microtask 和 macrotask</a></h1>
         
 
         <div class="post-meta">
@@ -350,7 +350,7 @@
 <p>正确答案是</p>
 <p>2 3 6 5 1 7 8 4</p>
 <p>不知道你写对了没有。有promise, async/await , setTimeout,看上去似乎答案不容易确定。但是如果你知道浏览器的eventloop那么相信你就能很快的写出来正确答案了。</p>
-<h2 id="浏览器的eventloop"><a href="#浏览器的eventloop" class="headerlink" title="浏览器的eventloop"></a>浏览器的eventloop</h2><p>浏览器的eventloop至少包含两种 macrotask 和 microtask</p>
+<h2 id="浏览器的event-Loop"><a href="#浏览器的event-Loop" class="headerlink" title="浏览器的event Loop"></a>浏览器的event Loop</h2><p>浏览器的event Loop至少包含两种 macrotask 和 microtask</p>
 <p>Macrotasks包含生成dom对象、解析HTML、执行主线程js代码、更改当前URL还有其他的一些事件如页面加载、输入、网络事件和定时器事件。从浏览器的角度来看，macrotask代表一些离散的独立的工作。当执行完一个task后，浏览器可以继续其他的工作如页面重渲染和垃圾回收。</p>
 <p>Microtasks则是完成一些更新应用程序状态的较小任务，如处理promise的回调和DOM的修改，这些任务在浏览器重渲染前执行。Microtask应该以异步的方式尽快执行，其开销比执行一个新的macrotask要小。Microtasks使得我们可以在UI重渲染之前执行某些任务，从而避免了不必要的UI渲染，这些渲染可能导致显示的应用程序状态不一致。</p>
 <p><a href="https://imgchr.com/i/CE0AsS" target="_blank" rel="noopener"><img src="https://s1.ax1x.com/2018/04/12/CE0AsS.png" alt="CE0AsS.png"></a></p>
@@ -371,6 +371,8 @@
 <p>如果我们的mircotask所有相关的任务大大超过16ms这个时候，浏览器就不能按照正常目标的帧率来渲染ui。用户就能感觉到卡顿。</p>
 <p>另外要注意 requestAnimationFrame(code)，一般用于动画，与 setTimeout 方法类似，区别是 setTimeout 是用户指定的，而 requestAnimationFrame 是浏览器刷新频率决定的，一般遵循 W3C 标准，它在浏览器每次刷新页面之前执行。<br>但有兼容性问题。</p>
 <h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h2><p>写这篇文章主要是为了下一篇文章，vue异步渲染要用到。属于前置知识。 vue的源码中，用了promise, MumationObserve, setTimeout 根据支持情况，做异步更新。 promise和MumationObserve先于 setTimeout就是因为，mircotask 总是先于ui渲染执行。</p>
+<p>参考文章：<a href="https://zhuanlan.zhihu.com/p/24460769" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/24460769</a></p>
+<p>延伸阅读：<a href="https://juejin.im/post/5ab7677f6fb9a028d56711d0" target="_blank" rel="noopener">https://juejin.im/post/5ab7677f6fb9a028d56711d0</a></p>
 
           
         
