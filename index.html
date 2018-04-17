@@ -242,6 +242,212 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/16/vue的异步更新原理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="风情">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="风情的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/04/16/vue的异步更新原理/" itemprop="url">vue的异步更新原理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-16T22:11:31+08:00">
+                2018-04-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/" itemprop="url" rel="index">
+                    <span itemprop="name">js</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/框架/" itemprop="url" rel="index">
+                    <span itemprop="name">框架</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/js/框架/vue-js/" itemprop="url" rel="index">
+                    <span itemprop="name">vue.js</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>这篇文章主要结合之前实现的简单的MVVM续写的一篇文章，通过简单的代码，可以帮助理解vue的异步更新机制。文章中使用的代码都是参考vue源码实现的，但是肯定么有那么复杂，全面，旨在理解原理。</p>
+<p>前置文章:</p>
+<p><a href="https://sys521.github.io/2018/04/12/js的microtast-和-macrotask/" target="_blank" rel="noopener">https://sys521.github.io/2018/04/12/js的microtast-和-macrotask/</a></p>
+<h1 id="我们应该实现怎样的异步更新"><a href="#我们应该实现怎样的异步更新" class="headerlink" title="我们应该实现怎样的异步更新"></a>我们应该实现怎样的异步更新</h1><p>vue的官方文档上给出了 Vue是基于异步更新的，然后更新完成之后，我们可以用this.$nextTick来获取到更新完成之后的dom。那么为什么要异步更新呢。</p>
+<p>首先，给出一个场景，当我们操作一个数据，对其赋值1000次，按照我们之前实现的mvvm框架，DEP就得触发1000次，这好像不行。所以，考虑到这些，我们就应该做一个异步的更新，先缓存一下数据，等到页面上所有的代码操作完成，我们就可以更新数据，而且，我们可以只考虑更新最后一次数据，因为，我们只关心最后的结果，没有必要数据是如何变成这样的。</p>
+<p>比如这里有个button。 我们点击一次，分别触发100次对data中的某一个数据赋值，我们就将这100次赋值缓存起来，等到所有的js代码执行完成，我们就可以直接对data赋值第100次就ok了。</p>
+<p>究竟要怎么做才能实现呢。首先，我们要实现一个异步队列。应该怎么实现呢?</p>
+<p>例如，我们有一个data.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">let data = &#123;</span><br><span class="line">  name: &apos;xiaoming&apos;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 同时，我们还有一个 Watcher 对象，能够观察到data的变化，为了写代码更方便，我们就直接</span><br><span class="line">// 把我们的watcher 写成这个样子。</span><br><span class="line">class Watcher &#123;</span><br><span class="line">  constructor(data, val) &#123;</span><br><span class="line">    this.data = data</span><br><span class="line">    this.val = val</span><br><span class="line">  &#125;</span><br><span class="line">  updata () &#123;</span><br><span class="line">    data.name = this.val</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// data.name -&gt; &apos;haha&apos;</span><br><span class="line">console.log(data.name) // &apos;xiaoming&apos;</span><br><span class="line">// data.name -&gt; &apos;heihei&apos;</span><br><span class="line">console.log(data.name) // &apos;xiaoming&apos;</span><br><span class="line">// data.name -&gt; &apos;lala&apos;</span><br><span class="line">console.log(data.name) // &apos;xiaoming&apos;</span><br><span class="line">... </span><br><span class="line"></span><br><span class="line">nextTick(() =&gt; &#123;</span><br><span class="line">  console.log(data.name)</span><br><span class="line">&#125;) // &apos;lala&apos;</span><br></pre></td></tr></table></figure>
+<p>中间部分就是我们应该完善的部分，如果我们能实现上面就应该明白知道vue的一部更新大概是怎么样的啦。所以，我们的需求就已经提取出来了。</p>
+<h1 id="实现异步队列。"><a href="#实现异步队列。" class="headerlink" title="实现异步队列。"></a>实现异步队列。</h1><p>那么我们现在开始准备动手写代码吧。</p>
+<p>Q: 首先考虑，队列里重复的watcher怎么处理，例如上面的代码，我们反复修改name？<br>A: 我们可以想象，我们有一个异步的队列，里面放着一个一个的watcher。 为了保证每一个数据来源只有一个watcher在队列里，我们可以给这个watcher添加一个属性id。 我们这个队列里面要去除掉重复的id。例如，我们更新同一个数据源。我们应该要保证队列里面的watcher是最新的。</p>
+<p>Q: 什么时候执行队列里的存放的watcher。<br>A: 根据前面的microtask 和 macrotask 我们应该当采用mircotask。所以我们这里直接考虑用Promise来解决。</p>
+<p>所以，我们的基本思路就是 有一个queue数组，里面放着这轮所有的Watcher。 当这次所有的代码执行完成后（promise.then())然后我们执行数组里面的watcher更新方法。 </p>
+<h1 id="开始实现"><a href="#开始实现" class="headerlink" title="开始实现"></a>开始实现</h1><ol>
+<li><p>首先，我们先实现一个方法，就是data变化时，我们放入一个将自己添加到一个队列里面。所有添加一个update方法。</p>
+</li>
+<li><p>update 应该是收集一个队列。并且，在恰当的时候（本轮所有事件触发完毕，dom更新前）自动执行。</p>
+</li>
+</ol>
+<p>好吧，开始写我们的代码。 此时我们的代码变成了这样</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">let queue = []</span><br><span class="line"></span><br><span class="line">class Watcher  &#123;</span><br><span class="line">  constructor(data, val)&#123;</span><br><span class="line">    this.data = data</span><br><span class="line">    this.val = val</span><br><span class="line">    this.id = 1</span><br><span class="line">  &#125;</span><br><span class="line">  run () &#123;</span><br><span class="line">    this.data.a = this.val</span><br><span class="line">    console.log(&apos;2222&apos;)</span><br><span class="line">  &#125;</span><br><span class="line">  update () &#123;</span><br><span class="line">    queueList(this)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">let hasId = (arr, id) =&gt; &#123;</span><br><span class="line">  let index = -1</span><br><span class="line">  arr.forEach((e,i) =&gt; &#123;</span><br><span class="line">    if(e.id === id) &#123;</span><br><span class="line">      index = i</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;)</span><br><span class="line">  return index</span><br><span class="line">&#125;</span><br><span class="line">// 往queue这个队列中加入函数。并且去掉id一样的，也就是，watcher.id 一样的watcher</span><br><span class="line"></span><br><span class="line">function queueList (watcher) &#123;</span><br><span class="line">  let index = hasId(queue, watcher.id)</span><br><span class="line">  if (index !== -1) &#123;</span><br><span class="line">    queue.splice(index, 1, watcher)</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    queue.push(watcher)</span><br><span class="line">  &#125;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，我们应该实现一个nextTick,异步更新。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">let nextTick = () =&gt; &#123;</span><br><span class="line">  let p = Promise.resolve()</span><br><span class="line">  p.then(() =&gt; &#123;</span><br><span class="line">    queue.forEach(e =&gt; &#123;</span><br><span class="line">      e.run()</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以，基本上我们的代码就已经写完了，但是还有很多问题没有完成。</p>
+<ol>
+<li>一轮更新中，肯定有很多watcher。 难道每次更新一次就得，nextTick就运行了一次。这样，我们执行了好多遍。</li>
+</ol>
+<p>所以，我们可以考虑加一个状态锁。 例如这样。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">let wating = false</span><br><span class="line">function queueList (watcher) &#123;</span><br><span class="line">  let index = hasId(queue, watcher.id)</span><br><span class="line">  if (index !== -1) &#123;</span><br><span class="line">    queue.splice(index, 1, watcher)</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    queue.push(watcher)</span><br><span class="line">  &#125;</span><br><span class="line">  if (!wating) &#123;</span><br><span class="line">    wating= true</span><br><span class="line">    nextTick()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样我们就可以保证，nextTick里面执行异步函数的时候，我们的queue已经被添加完了所有的事件。</p>
+<ol>
+<li>还有一个问题，就是我们必须要保证，p.then()的时候我们在函数外面能够捕捉到这个时刻，拿到想要的值。</li>
+</ol>
+<p>所以，我们的nextTick应该接受一个回调函数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">let nextTick = (cb) =&gt; &#123;</span><br><span class="line">  let p = Promise.resolve()</span><br><span class="line">  p.then(() =&gt; &#123;</span><br><span class="line">    arr.forEach(e =&gt; &#123;</span><br><span class="line">      e.run()</span><br><span class="line">    &#125;)</span><br><span class="line">    cb()</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是，我们考虑到我们的nextTick可能要接受到很多回调函数，所以，我们必须用闭包做一个缓存。所以，我们最终得改造一下nextTick 。 这里肯定用一个闭包实现。 参考vue的代码。我们实现的结果如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line">var data = &#123;</span><br><span class="line">  a: &apos;lala&apos;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 检测到a --&gt; &apos;haha&apos;</span><br><span class="line">// 检测到a --&gt; &apos;heihei&apos;</span><br><span class="line">// 检测到a --&gt; &apos;xx&apos;</span><br><span class="line"></span><br><span class="line">class Watcher  &#123;</span><br><span class="line">  constructor(data, val)&#123;</span><br><span class="line">    this.data = data</span><br><span class="line">    this.val = val</span><br><span class="line">    this.id = 1</span><br><span class="line">  &#125;</span><br><span class="line">  run () &#123;</span><br><span class="line">    this.data.a = this.val</span><br><span class="line">    console.log(&apos;2222&apos;)</span><br><span class="line">  &#125;</span><br><span class="line">  update () &#123;</span><br><span class="line">    queueList(this)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">let hasId = (arr, id) =&gt; &#123;</span><br><span class="line">  let index = -1</span><br><span class="line">  arr.forEach((e,i) =&gt; &#123;</span><br><span class="line">    if(e.id === id) &#123;</span><br><span class="line">      index = i</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;)</span><br><span class="line">  return index</span><br><span class="line">&#125;</span><br><span class="line">//</span><br><span class="line">let queue = []</span><br><span class="line">let wating = false</span><br><span class="line">//</span><br><span class="line">function queueList (watcher) &#123;</span><br><span class="line">  let index = hasId(queue, watcher.id)</span><br><span class="line">  if (index !== -1) &#123;</span><br><span class="line">    queue.splice(index, 1, watcher)</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    queue.push(watcher)</span><br><span class="line">  &#125;</span><br><span class="line">  if (!wating) &#123;</span><br><span class="line">    wating= true</span><br><span class="line">    nextTick(flushCallBack)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">//</span><br><span class="line">function flushCallBack() &#123;</span><br><span class="line">  queue.forEach(e =&gt; &#123;</span><br><span class="line">    e.run()</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line">//</span><br><span class="line">let nextTick = (() =&gt; &#123;</span><br><span class="line">  let callbacks = []</span><br><span class="line">  let peding = false</span><br><span class="line">  let p = Promise.resolve()</span><br><span class="line">  let nextTickHandle = () =&gt; &#123;</span><br><span class="line">    peding = false</span><br><span class="line">    let copies = callbacks.slice(0)</span><br><span class="line">    callbacks.length = 0</span><br><span class="line">    copies.forEach(e =&gt; &#123;</span><br><span class="line">      e()</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  let timerFunc = () =&gt; &#123;</span><br><span class="line">    p.then(() =&gt; &#123;</span><br><span class="line">     nextTickHandle() </span><br><span class="line">    &#125;).catch(err =&gt; console.log(err))</span><br><span class="line">  &#125;</span><br><span class="line">  return function queueNextTick(cb, ctx) &#123;</span><br><span class="line">    if (cb) &#123;</span><br><span class="line">      callbacks.push(() =&gt; &#123;</span><br><span class="line">        cb.call(ctx)</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    if (!peding) &#123;</span><br><span class="line">      peding = true</span><br><span class="line">      timerFunc()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)()</span><br><span class="line"></span><br><span class="line">class Vue &#123;</span><br><span class="line">  $nextTick (fn) &#123;</span><br><span class="line">    return nextTick(fn, this)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">let cc = new Vue()</span><br><span class="line">let a = new Watcher(data, &apos;haha&apos;)</span><br><span class="line">let b = new Watcher(data, &apos;lala&apos;)</span><br><span class="line">let c = new Watcher(data, &apos;xx&apos;)</span><br><span class="line">a.update()</span><br><span class="line">b.update()</span><br><span class="line">c.update()</span><br><span class="line">cc.$nextTick(() =&gt; &#123;</span><br><span class="line">  console.log(data.a)</span><br><span class="line">&#125;)</span><br><span class="line">console.log(data)</span><br><span class="line">console.log(&apos;111&apos;)</span><br><span class="line">setTimeout(() =&gt; &#123;</span><br><span class="line">  console.log(data)</span><br><span class="line">&#125;, 0)</span><br></pre></td></tr></table></figure>
+<p>这样，基本就完成了。。</p>
+<p>把这个原理，基本上可以糅合到我们的之前的自制的MVVM框架里。原理都一样。</p>
+<p>通过这些简单的代码，基本上我们就了解了异步更新的机制。Vue的源码基本上也差不多是这样的。</p>
+<p>之前的MVVM添加异步更新以后的代码: </p>
+<p><a href="https://github.com/sys521/MVVM" target="_blank" rel="noopener">https://github.com/sys521/MVVM</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/12/js的microtast-和-macrotask/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1333,7 +1539,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
